@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 """
-Scrape Hugging Face papers and summarize them using Gemini
+Scrape Hugging Face papers and summarize them using AI models (Together AI Llama or Gemini)
+
+Usage:
+    # Use Together AI Meta Llama 3.3 70B (requires TOGETHER_API_KEY)
+    python scrape_hf_papers.py --model together
+
+    # Use Google Gemini (requires GEMINI_API_KEY or GOOGLE_API_KEY)
+    python scrape_hf_papers.py --model gemini
+    
+    # Auto-detect model based on available API keys (default)
+    python scrape_hf_papers.py --model auto
+    
+    # Fetch papers for a specific date
+    python scrape_hf_papers.py --date 2024-08-07
 """
 
 import os
@@ -11,24 +24,65 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import json
 from langchain.chat_models.base import init_chat_model
+import random
+import argparse
 
-def get_model():
-    """Initialize Gemini model using provided configuration"""
+def get_model(model_preference=None):
+    """Initialize AI model using provided configuration"""
     try:
-        # First try with Gemini API key from environment
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        if api_key:
+        # If user specified a preference, try that first
+        if model_preference == "together":
+            together_api_key = os.getenv("TOGETHER_API_KEY")
+            if together_api_key:
+                print("🤖 Using Together AI Meta Llama 3.3 70B Instruct Turbo")
+                return init_chat_model(
+                    model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+                    model_provider="together",
+                    temperature=0.3,
+                    api_key=together_api_key
+                )
+            else:
+                raise ValueError("TOGETHER_API_KEY environment variable not found")
+        
+        elif model_preference == "gemini":
+            gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            if gemini_api_key:
+                print("🤖 Using Google Gemini 1.5 Flash")
+                return init_chat_model(
+                    model="gemini-1.5-flash",
+                    model_provider="google-genai",
+                    temperature=0.3,
+                    api_key=gemini_api_key
+                )
+            else:
+                raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable not found")
+        
+        # Auto-detect based on available API keys
+        together_api_key = os.getenv("TOGETHER_API_KEY")
+        if together_api_key:
+            print("🤖 Using Together AI Meta Llama 3.3 70B Instruct Turbo")
+            return init_chat_model(
+                model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+                model_provider="together",
+                temperature=0.3,
+                api_key=together_api_key
+            )
+        
+        # Fallback to Gemini
+        gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if gemini_api_key:
+            print("🤖 Using Google Gemini 1.5 Flash")
             return init_chat_model(
                 model="gemini-1.5-flash",
                 model_provider="google-genai",
                 temperature=0.3,
-                api_key=api_key
+                api_key=gemini_api_key
             )
         else:
-            raise ValueError("No Gemini API key found in environment variables")
+            raise ValueError("No API key found. Please set TOGETHER_API_KEY or GEMINI_API_KEY/GOOGLE_API_KEY environment variable")
     except Exception as e:
-        print(f"Error initializing Gemini model: {e}")
-        print("Please set GEMINI_API_KEY or GOOGLE_API_KEY environment variable")
+        print(f"Error initializing AI model: {e}")
+        print("Please set TOGETHER_API_KEY or GEMINI_API_KEY/GOOGLE_API_KEY environment variable")
         return None
 
 def fetch_papers_list(date_str=None):
@@ -165,9 +219,9 @@ def download_paper_pdf(pdf_url, save_path):
         print(f"  ⚠️ Error downloading PDF: {e}")
         return False
 
-def summarize_paper_with_gemini(paper_info, pdf_path=None):
-    """Generate paper summary using Gemini"""
-    model = get_model()
+def summarize_paper_with_ai(paper_info, pdf_path=None, max_retries=5, model_preference=None):
+    """Generate paper summary using AI model with rate limit handling"""
+    model = get_model(model_preference)
     
     # Create a prompt for summarization with enhanced formatting
     prompt = f"""
@@ -201,25 +255,87 @@ def summarize_paper_with_gemini(paper_info, pdf_path=None):
     Format your response with proper markdown, using **bold** and *italics* throughout for emphasis and clarity.
     """
     
-    try:
-        response = model.invoke(prompt)
-        return response.content
-    except Exception as e:
-        print(f"Error summarizing with Gemini: {e}")
-        return f"Summary generation failed: {str(e)}"
+    for attempt in range(max_retries):
+        try:
+            response = model.invoke(prompt)
+            return response.content
+        except Exception as e:
+            error_str = str(e)
+            
+            # Check if this is a rate limit error
+            if "429" in error_str or "quota" in error_str.lower() or "rate" in error_str.lower():
+                if attempt < max_retries - 1:
+                    # Calculate exponential backoff with jitter
+                    base_delay = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
+                    jitter = random.uniform(0.5, 1.5)  # Add randomness to avoid thundering herd
+                    delay = base_delay * jitter
+                    
+                    print(f"  ⏱️ Rate limit hit. Waiting {delay:.1f} seconds before retry {attempt + 1}/{max_retries}...")
+                    time.sleep(delay)
+                    continue
+                else:
+                    print(f"  ❌ Rate limit exceeded after {max_retries} attempts. Skipping this paper.")
+                    return f"Rate limit exceeded after {max_retries} attempts. Please try again later or increase your API quota."
+            else:
+                # For non-rate-limit errors, don't retry
+                print(f"Error summarizing with AI model: {e}")
+                return f"Summary generation failed: {str(e)}"
+    
+    return "Unexpected error in retry loop"
+
+def load_progress(output_dir):
+    """Load progress from previous run"""
+    progress_file = output_dir / ".progress.json"
+    if progress_file.exists():
+        try:
+            with open(progress_file, 'r') as f:
+                return json.load(f)
+        except:
+            return {"completed_papers": [], "last_index": 0}
+    return {"completed_papers": [], "last_index": 0}
+
+def save_progress(output_dir, completed_papers, last_index):
+    """Save current progress"""
+    progress_file = output_dir / ".progress.json"
+    progress = {
+        "completed_papers": completed_papers,
+        "last_index": last_index,
+        "timestamp": datetime.now().isoformat()
+    }
+    with open(progress_file, 'w') as f:
+        json.dump(progress, f, indent=2)
 
 def main():
     """Main function to orchestrate scraping and summarization"""
-    # Create folder with today's date
-    today = datetime.now().strftime("%Y-%m-%d")
-    output_dir = Path(f"papers_{today}")
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Scrape HuggingFace papers and generate AI summaries')
+    parser.add_argument('--model', choices=['together', 'gemini', 'auto'], default='auto',
+                        help='AI model to use: together (Meta Llama 3.3 70B), gemini (Gemini 1.5 Flash), or auto (detect based on available API keys)')
+    parser.add_argument('--date', type=str, default=None,
+                        help='Date to fetch papers for (YYYY-MM-DD format). Defaults to today.')
+    args = parser.parse_args()
+    
+    # Create folder with specified date or today's date
+    target_date = args.date if args.date else datetime.now().strftime("%Y-%m-%d")
+    output_dir = Path(f"papers_{target_date}")
     output_dir.mkdir(exist_ok=True)
     
     print(f"📁 Created output directory: {output_dir}")
     
-    # Fetch papers - pass the date to fetch papers for today
+    # Determine model preference
+    model_preference = None if args.model == 'auto' else args.model
+    
+    # Load previous progress if exists
+    progress = load_progress(output_dir)
+    completed_paper_ids = set(progress.get("completed_papers", []))
+    last_index = progress.get("last_index", 0)
+    
+    if completed_paper_ids:
+        print(f"📄 Resuming from previous run. {len(completed_paper_ids)} papers already completed.")
+    
+    # Fetch papers - pass the date to fetch papers for target date
     print("🔍 Fetching papers from Hugging Face...")
-    papers = fetch_papers_list(today)
+    papers = fetch_papers_list(target_date)
     
     if isinstance(papers, dict):
         # If we got the daily papers response, extract the papers list
@@ -231,63 +347,113 @@ def main():
     
     print(f"📄 Found {len(papers)} papers to process")
     
+    # Limit to first 6 papers
+    papers = papers[:6]
+    print(f"📄 Processing first {len(papers)} papers")
+    
+    # Filter out already completed papers
+    remaining_papers = []
+    for paper in papers:
+        paper_id = paper.get('id', '')
+        if paper_id not in completed_paper_ids:
+            remaining_papers.append(paper)
+    
+    if not remaining_papers:
+        print("✅ All papers already processed!")
+        return
+        
+    print(f"📄 {len(remaining_papers)} papers remaining to process")
+    
     # Process each paper
     summaries = []
-    for i, paper in enumerate(papers, 1):
-        paper_id = paper.get('id', f'paper_{i}')
+    start_index = len(papers) - len(remaining_papers)
+    
+    for i, paper in enumerate(remaining_papers):
+        current_index = start_index + i + 1
+        paper_id = paper.get('id', f'paper_{current_index}')
         title = paper.get('title', 'Unknown Title')
         
-        print(f"\n[{i}/{len(papers)}] Processing: {title}")
+        print(f"\n[{current_index}/{len(papers)}] Processing: {title}")
         
         # Create paper directory
         paper_dir = output_dir / f"{paper_id.replace('/', '_')}"
         paper_dir.mkdir(exist_ok=True)
         
-        # Try to download PDF
-        pdf_path = paper_dir / f"{paper_id.replace('/', '_')}.pdf"
-        pdf_url = paper.get('pdf_url', f"https://arxiv.org/pdf/{paper_id}.pdf")
-        
-        print(f"  📥 Downloading PDF...")
-        pdf_downloaded = download_paper_pdf(pdf_url, pdf_path)
-        
-        if not pdf_downloaded:
-            print(f"  ⚠️ Could not download PDF, using abstract only")
-        
-        # Generate summary with Gemini
-        print(f"  🤖 Generating summary with Gemini...")
-        summary = summarize_paper_with_gemini(paper, pdf_path if pdf_downloaded else None)
-        
-        # Save summary
+        # Check if summary already exists
         summary_path = paper_dir / "summary.md"
-        with open(summary_path, 'w', encoding='utf-8') as f:
-            f.write(f"# {title}\n\n")
-            f.write(f"**Paper ID:** {paper_id}\n\n")
-            f.write(f"**Authors:** {', '.join([author.get('name', '') if isinstance(author, dict) else str(author) for author in paper.get('authors', ['Not available'])])}\n\n")
-            f.write(f"**URL:** {paper.get('url', 'Not available')}\n\n")
-            f.write("## Summary\n\n")
-            f.write(summary)
+        if summary_path.exists():
+            print(f"  ✅ Summary already exists, skipping...")
+            completed_paper_ids.add(paper_id)
+            save_progress(output_dir, list(completed_paper_ids), current_index)
+            continue
         
-        # Save paper metadata
-        metadata_path = paper_dir / "metadata.json"
-        with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(paper, f, indent=2)
-        
-        summaries.append({
-            'title': title,
-            'id': paper_id,
-            'summary': summary,
-            'pdf_downloaded': pdf_downloaded
-        })
-        
-        print(f"  ✅ Saved summary to {summary_path}")
-        
-        # Rate limiting to be nice to APIs
-        time.sleep(2)
+        try:
+            # Try to download PDF
+            pdf_path = paper_dir / f"{paper_id.replace('/', '_')}.pdf"
+            pdf_url = paper.get('pdf_url', f"https://arxiv.org/pdf/{paper_id}.pdf")
+            
+            print(f"  📥 Downloading PDF...")
+            pdf_downloaded = download_paper_pdf(pdf_url, pdf_path)
+            
+            if not pdf_downloaded:
+                print(f"  ⚠️ Could not download PDF, using abstract only")
+            
+            # Generate summary with AI model
+            print(f"  🤖 Generating summary with AI model...")
+            summary = summarize_paper_with_ai(paper, pdf_path if pdf_downloaded else None, model_preference=model_preference)
+            
+            # Check if summary generation was successful
+            if "Rate limit exceeded" in summary:
+                print(f"  ⏸️ Rate limit hit. Saving progress and stopping.")
+                save_progress(output_dir, list(completed_paper_ids), current_index - 1)
+                print(f"  💾 Progress saved. Run the script again to continue from where you left off.")
+                return
+            
+            # Save summary
+            authors_list = ', '.join([author.get('name', '') if isinstance(author, dict) else str(author) for author in paper.get('authors', ['Not available'])])
+            with open(summary_path, 'w', encoding='utf-8') as f:
+                f.write(f"# {title}\n\n")
+                f.write(f"**Paper ID:** {paper_id}\n\n")
+                f.write(f"**URL:** {paper.get('url', 'Not available')}\n\n")
+                f.write("## Summary\n\n")
+                f.write(summary)
+                f.write(f"\n\n---\n\n**Authors:** {authors_list}\n")
+            
+            # Save paper metadata
+            metadata_path = paper_dir / "metadata.json"
+            with open(metadata_path, 'w', encoding='utf-8') as f:
+                json.dump(paper, f, indent=2)
+            
+            summaries.append({
+                'title': title,
+                'id': paper_id,
+                'summary': summary,
+                'pdf_downloaded': pdf_downloaded
+            })
+            
+            print(f"  ✅ Saved summary to {summary_path}")
+            
+            # Mark as completed and save progress
+            completed_paper_ids.add(paper_id)
+            save_progress(output_dir, list(completed_paper_ids), current_index)
+            
+            # Rate limiting to be nice to APIs
+            time.sleep(2)
+            
+        except KeyboardInterrupt:
+            print(f"\n⏸️ Processing interrupted by user. Saving progress...")
+            save_progress(output_dir, list(completed_paper_ids), current_index - 1)
+            print(f"💾 Progress saved. Run the script again to continue from where you left off.")
+            return
+        except Exception as e:
+            print(f"  ❌ Error processing paper {paper_id}: {e}")
+            print(f"  ⏭️ Skipping to next paper...")
+            continue
     
     # Create master summary file
     master_summary_path = output_dir / "all_summaries.md"
     with open(master_summary_path, 'w', encoding='utf-8') as f:
-        f.write(f"# Hugging Face Papers Summary - {today}\n\n")
+        f.write(f"# Hugging Face Papers Summary - {target_date}\n\n")
         f.write(f"Total papers processed: {len(summaries)}\n\n")
         
         for item in summaries:

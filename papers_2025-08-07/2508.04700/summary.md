@@ -3,50 +3,38 @@
 
 **Paper ID:** 2508.04700
 
-**Authors:** Zeyi Sun, Ziyu Liu, Yuhang Zang, Yuhang Cao, Xiaoyi Dong, Tong Wu, Dahua Lin, Jiaqi Wang
-
 **URL:** https://huggingface.co/papers/2508.04700
 
 ## Summary
 
 ## Executive Summary
-
-This paper introduces **SEAgent**, a novel *self-evolving* framework for computer use agents (CUAs) that enables autonomous learning from experience. Unlike existing methods relying heavily on *human-labeled data*, SEAgent allows CUAs to master *novel software environments* through *iterative trial-and-error*.  It achieves this by employing a *World State Model* for trajectory assessment, a *Curriculum Generator* for task progression, and a policy update mechanism combining *adversarial imitation of failures* and *Group Relative Policy Optimization (GRPO)*.  A *specialist-to-generalist* training strategy further enhances the agent's adaptability, resulting in superior performance compared to existing CUAs, such as UI-TARS, achieving a *23.2% improvement in success rate* across five diverse software environments.
-
+The proposed **SEAgent** framework enables computer-use agents to autonomously evolve through interactions with unfamiliar software, leveraging *experiential learning* to master novel software environments. By utilizing a **World State Model** and a **Curriculum Generator**, the agent can explore new software, learn through iterative trial-and-error, and progressively tackle auto-generated tasks. This approach allows the agent to develop a stronger *generalist* capability, ultimately achieving performance surpassing ensembles of individual **specialist agents**. The **SEAgent** framework has the potential to revolutionize the field of computer-use agents by enabling them to adapt to new software environments without requiring *human-labeled data*.
 
 ## Key Contributions and Findings
-
-* **Autonomous Learning from Experience:** SEAgent enables CUAs to learn and adapt to *unfamiliar software* without relying on extensive human annotation, significantly reducing the need for manual labeling.  *This is achieved through a curriculum learning approach and reinforcement learning techniques.*
-
-* **Self-Evolving Framework:** The *specialist-to-generalist* training strategy allows SEAgent to continuously improve its capabilities by integrating knowledge gained from interactions with various software environments, leading to a more robust and adaptable generalist agent. *This surpasses the performance of ensembles of specialist agents.*
-
-* **Novel Curriculum Generation and Policy Optimization:** The *Curriculum Generator* dynamically creates increasingly complex tasks, while the policy update mechanism combines *adversarial imitation learning* and *GRPO* to efficiently learn from both successes and failures. *This ensures effective and efficient learning.*
-
-* **Improved Performance on Novel Software:** SEAgent demonstrates a *significant 23.2% improvement in success rate (from 11.3% to 34.5%)* compared to the open-source CUA, UI-TARS, across five diverse software environments within OS-World. *This validates the effectiveness of the proposed framework.*
-
-* **World State Model for Trajectory Assessment:** The *World State Model* provides a structured way to evaluate the agent's actions and progress, enabling more effective learning and adaptation.  *This is crucial for the curriculum learning and policy optimization components.*
-
+* **Autonomous Learning**: The **SEAgent** framework enables computer-use agents to autonomously learn from experience, allowing them to adapt to new software environments without requiring *human annotations*.
+* **Experiential Learning**: The agent's policy is updated through *experiential learning*, which includes *adversarial imitation* of failure actions and **Group Relative Policy Optimization (GRPO)** on successful ones.
+* **Specialist-to-Generalist Training**: The introduction of a *specialist-to-generalist* training strategy facilitates the development of a stronger **generalist** CUA, capable of continuous autonomous evolution.
+* **Performance Improvement**: The **SEAgent** framework achieves a significant improvement of *23.2%* in success rate, from *11.3%* to *34.5%*, over a competitive open-source CUA, **UI-TARS**.
+* **Scalability**: The framework is validated across *five novel software environments* within **OS-World**, demonstrating its scalability and potential for real-world applications.
 
 ## Methodology Overview
-
-SEAgent employs a *self-evolving* approach where a CUA interacts with *novel software environments*.  A **World State Model** assesses the agent's actions and progress. A **Curriculum Generator** creates a sequence of tasks increasing in complexity. The agent's policy is updated using *adversarial imitation learning* for failures and *Group Relative Policy Optimization (GRPO)* for successes.  Finally, a **specialist-to-generalist training strategy** integrates knowledge from multiple specialized agents to create a more robust generalist CUA.
-
+The **SEAgent** framework consists of several major components, including a **World State Model** for step-wise trajectory assessment, a **Curriculum Generator** for generating increasingly diverse and challenging tasks, and an *experiential learning* mechanism for updating the agent's policy. The framework utilizes *adversarial imitation* and **GRPO** to learn from failure and success, respectively. The *specialist-to-generalist* training strategy is also employed to integrate individual experiential insights from **specialist agents**.
 
 ## Results and Performance
-
-SEAgent achieved a *23.2% increase in success rate*, improving from *11.3% to 34.5%* compared to the baseline CUA, UI-TARS, across five different software environments within OS-World. This demonstrates the effectiveness of the *self-evolving* and *specialist-to-generalist* training strategies.
-
+The **SEAgent** framework achieves a significant improvement in **success rate**, with a *23.2%* increase from *11.3%* to *34.5%*, compared to **UI-TARS**. The framework also demonstrates its ability to adapt to new software environments, with a *significant improvement* in performance across *five novel software environments* within **OS-World**. The results are compared to *state-of-the-art* methods, highlighting the **SEAgent** framework's potential for real-world applications.
 
 ## Limitations and Future Work
-
-While SEAgent shows promising results, limitations include the *reliance on a specific software environment (OS-World)* and the potential for *overfitting to the specific tasks generated by the Curriculum Generator*. Future work could explore *transfer learning* to other software environments and *more sophisticated curriculum generation techniques* to enhance generalization.
-
+The paper does not explicitly mention any limitations of the **SEAgent** framework. However, potential future directions may include:
+* Exploring the application of the **SEAgent** framework to other domains, such as *robotics* or *natural language processing*.
+* Investigating the use of *transfer learning* to adapt the **SEAgent** framework to new software environments.
+* Developing more advanced *experiential learning* mechanisms to improve the agent's ability to learn from experience.
 
 ## Practical Applications
+The **SEAgent** framework has several potential real-world applications, including:
+* **Automated software testing**: The framework can be used to automate the testing of new software environments, reducing the need for *human annotations* and improving the efficiency of the testing process.
+* **Intelligent tutoring systems**: The **SEAgent** framework can be used to develop intelligent tutoring systems that can adapt to individual users' needs and provide personalized feedback.
+* **Human-computer interaction**: The framework can be used to improve human-computer interaction by enabling computers to learn from experience and adapt to new software environments.
 
-SEAgent's ability to autonomously learn and adapt to new software has significant implications for various applications, including:
+---
 
-* **Automated software testing:**  SEAgent could be used to automatically test software for bugs and usability issues.
-* **Robotic process automation (RPA):** SEAgent could automate complex tasks involving multiple software applications.
-* **Personalized software assistance:** SEAgent could provide customized assistance to users with varying levels of technical expertise.
-* **Development of AI agents for complex tasks:** SEAgent's approach could be applied to other domains requiring autonomous learning and adaptation.
+**Authors:** Zeyi Sun, Ziyu Liu, Yuhang Zang, Yuhang Cao, Xiaoyi Dong, Tong Wu, Dahua Lin, Jiaqi Wang
