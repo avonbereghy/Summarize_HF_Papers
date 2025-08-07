@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HuggingFace Papers Daily Summary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .intro {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .intro h1 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 2.5em;
+        }
+
+        .intro p {
+            color: #666;
+            font-size: 1.1em;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .calendar-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .calendar-section {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .calendar {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .calendar-header h2 {
+            font-size: 1.3em;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-nav button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .calendar-nav button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px 5px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .calendar-day.has-papers {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .calendar-day.has-papers::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            width: 6px;
+            height: 6px;
+            background: #ffd700;
+            border-radius: 50%;
+        }
+
+        .calendar-day.selected {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.2);
+        }
+
+        .calendar-day.other-month {
+            color: #ccc;
+        }
+
+        .summary-section {
+            flex: 2;
+            min-width: 400px;
+        }
+
+        .summary-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .summary-placeholder {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        .summary-content {
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .summary-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .summary-header h3 {
+            margin-bottom: 5px;
+        }
+
+        .paper-list {
+            list-style: none;
+        }
+
+        .paper-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .paper-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .paper-item h4 {
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+
+        .paper-item .paper-id {
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .paper-item .paper-authors {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .paper-item .paper-summary {
+            color: #333;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .paper-detail {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .paper-detail.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .paper-detail h2 {
+            color: #764ba2;
+            margin-bottom: 15px;
+        }
+
+        .paper-detail section {
+            margin-bottom: 20px;
+        }
+
+        .paper-detail h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .paper-detail p, .paper-detail li {
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .paper-detail ul {
+            margin-left: 20px;
+        }
+
+        .paper-detail a {
+            color: #764ba2;
+            text-decoration: none;
+        }
+
+        .paper-detail a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        @media (max-width: 768px) {
+            .calendar-container {
+                flex-direction: column;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="intro">
+            <h1>HuggingFace Papers Daily</h1>
+            <p>Welcome! I'm passionate about machine learning and AI research. Here you'll find daily summaries of the latest papers from HuggingFace. Click on any highlighted date in the calendar to explore the papers published that day.</p>
+        </div>
+
+        <div class="calendar-container">
+            <div class="calendar-section">
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <button class="calendar-nav" onclick="previousMonth()">←</button>
+                        <h2 id="currentMonth">August 2025</h2>
+                        <button class="calendar-nav" onclick="nextMonth()">→</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-section">
+                <div class="summary-container" id="summaryContainer">
+                    <div class="summary-placeholder">
+                        <h3>Select a date to view papers</h3>
+                        <p>Click on highlighted dates in the calendar to see the paper summaries for that day.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Paper data structure - this will be populated from the actual files
+        const papersData = {};
+        
+        let currentDate = new Date();
+        let selectedDate = null;
+
+        // Initialize calendar
+        async function init() {
+            await loadPapersData();
+            renderCalendar();
+        }
+
+        // Load papers data from the repository structure
+        async function loadPapersData() {
+            try {
+                const response = await fetch('data.json');
+                const data = await response.json();
+                Object.assign(papersData, data.papers);
+            } catch (error) {
+                console.error('Error loading papers data:', error);
+                // Fallback to hardcoded data if JSON fails to load
+                papersData['2025-08-07'] = [
+                    { id: '2507.23785', path: 'papers_2025-08-07/2507.23785' },
+                    { id: '2508.01191', path: 'papers_2025-08-07/2508.01191' },
+                    { id: '2508.01858', path: 'papers_2025-08-07/2508.01858' },
+                    { id: '2508.02694', path: 'papers_2025-08-07/2508.02694' },
+                    { id: '2508.03159', path: 'papers_2025-08-07/2508.03159' },
+                    { id: '2508.03501', path: 'papers_2025-08-07/2508.03501' },
+                    { id: '2508.03560', path: 'papers_2025-08-07/2508.03560' },
+                    { id: '2508.03680', path: 'papers_2025-08-07/2508.03680' },
+                    { id: '2508.03789', path: 'papers_2025-08-07/2508.03789' },
+                    { id: '2508.03905', path: 'papers_2025-08-07/2508.03905' },
+                    { id: '2508.04026', path: 'papers_2025-08-07/2508.04026' },
+                    { id: '2508.04280', path: 'papers_2025-08-07/2508.04280' },
+                    { id: '2508.04700', path: 'papers_2025-08-07/2508.04700' }
+                ];
+            }
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Update month header
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+            
+            // Clear calendar grid
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Add day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+            
+            // Add previous month's trailing days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = daysInPrevMonth - i;
+                grid.appendChild(day);
+            }
+            
+            // Add current month's days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+                
+                // Check if this date has papers
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                if (papersData[dateStr]) {
+                    dayElement.classList.add('has-papers');
+                    dayElement.onclick = () => selectDate(dateStr);
+                }
+                
+                if (selectedDate === dateStr) {
+                    dayElement.classList.add('selected');
+                }
+                
+                grid.appendChild(dayElement);
+            }
+            
+            // Add next month's leading days
+            const totalCells = grid.children.length - 7; // Subtract header row
+            const remainingCells = 35 - totalCells; // 5 rows × 7 days
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day other-month';
+                dayElement.textContent = day;
+                grid.appendChild(dayElement);
+            }
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        async function selectDate(dateStr) {
+            selectedDate = dateStr;
+            renderCalendar();
+            
+            const container = document.getElementById('summaryContainer');
+            container.innerHTML = '<div class="loading">Loading papers</div>';
+            
+            const papers = papersData[dateStr];
+            if (!papers || papers.length === 0) {
+                container.innerHTML = '<div class="summary-placeholder"><h3>No papers available</h3><p>No papers found for this date.</p></div>';
+                return;
+            }
+            
+            // Create summary content
+            let html = `
+                <div class="summary-content">
+                    <div class="summary-header">
+                        <h3>Papers for ${dateStr}</h3>
+                        <p>${papers.length} papers available</p>
+                    </div>
+                    <ul class="paper-list">
+            `;
+            
+            for (const paper of papers) {
+                try {
+                    const response = await fetch(`${paper.path}/metadata.json`);
+                    const metadata = await response.json();
+                    
+                    const summaryResponse = await fetch(`${paper.path}/summary.md`);
+                    const summaryText = await summaryResponse.text();
+                    
+                    // Extract executive summary from the markdown
+                    const execSummaryMatch = summaryText.match(/## Executive Summary\s+([\s\S]*?)(?=\n##|$)/);
+                    const execSummary = execSummaryMatch ? execSummaryMatch[1].trim() : 'Summary not available';
+                    
+                    html += `
+                        <li class="paper-item" onclick="togglePaperDetail('${paper.id}')">
+                            <div class="paper-id">Paper #${paper.id}</div>
+                            <h4>${metadata.title || 'Untitled Paper'}</h4>
+                            <div class="paper-authors">${metadata.authors ? metadata.authors.join(', ') : 'Authors not available'}</div>
+                            <div class="paper-summary">${execSummary}</div>
+                        </li>
+                        <div class="paper-detail" id="detail-${paper.id}">
+                            <div style="white-space: pre-wrap; font-family: inherit;">${summaryText}</div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error(`Error loading paper ${paper.id}:`, error);
+                    html += `
+                        <li class="paper-item">
+                            <div class="paper-id">Paper #${paper.id}</div>
+                            <h4>Error loading paper</h4>
+                            <div class="paper-summary">Unable to load paper summary</div>
+                        </li>
+                    `;
+                }
+            }
+            
+            html += `
+                    </ul>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function togglePaperDetail(paperId) {
+            const detail = document.getElementById(`detail-${paperId}`);
+            const allDetails = document.querySelectorAll('.paper-detail');
+            
+            allDetails.forEach(d => {
+                if (d !== detail) {
+                    d.classList.remove('active');
+                }
+            });
+            
+            detail.classList.toggle('active');
+        }
+
+        // Initialize on page load
+        init();
+    </script>
+</body>
+</html>

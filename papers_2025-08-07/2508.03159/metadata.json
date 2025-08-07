@@ -1,0 +1,54 @@
+{
+  "id": "2508.03159",
+  "title": "CoTox: Chain-of-Thought-Based Molecular Toxicity Reasoning and\n  Prediction",
+  "authors": [
+    {
+      "_id": "68942f2f741a16f544fbcf54",
+      "name": "Jueon Park",
+      "hidden": false
+    },
+    {
+      "_id": "68942f2f741a16f544fbcf55",
+      "user": {
+        "_id": "64e5c8e594aa0690321f6b29",
+        "avatarUrl": "https://cdn-avatars.huggingface.co/v1/production/uploads/no-auth/IW5LRzmPcAM-dri8taMN7.png",
+        "isPro": false,
+        "fullname": "Yein Park",
+        "user": "P-YI",
+        "type": "user"
+      },
+      "name": "Yein Park",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:10.025Z",
+      "hidden": false
+    },
+    {
+      "_id": "68942f2f741a16f544fbcf56",
+      "name": "Minju Song",
+      "hidden": false
+    },
+    {
+      "_id": "68942f2f741a16f544fbcf57",
+      "name": "Soyon Park",
+      "hidden": false
+    },
+    {
+      "_id": "68942f2f741a16f544fbcf58",
+      "name": "Donghyeon Lee",
+      "hidden": false
+    },
+    {
+      "_id": "68942f2f741a16f544fbcf59",
+      "name": "Seungheun Baek",
+      "hidden": false
+    },
+    {
+      "_id": "68942f2f741a16f544fbcf5a",
+      "name": "Jaewoo Kang",
+      "hidden": false
+    }
+  ],
+  "abstract": "Drug toxicity remains a major challenge in pharmaceutical development. Recent\nmachine learning models have improved in silico toxicity prediction, but their\nreliance on annotated data and lack of interpretability limit their\napplicability. This limits their ability to capture organ-specific toxicities\ndriven by complex biological mechanisms. Large language models (LLMs) offer a\npromising alternative through step-by-step reasoning and integration of textual\ndata, yet prior approaches lack biological context and transparent rationale.\nTo address this issue, we propose CoTox, a novel framework that integrates LLM\nwith chain-of-thought (CoT) reasoning for multi-toxicity prediction. CoTox\ncombines chemical structure data, biological pathways, and gene ontology (GO)\nterms to generate interpretable toxicity predictions through step-by-step\nreasoning. Using GPT-4o, we show that CoTox outperforms both traditional\nmachine learning and deep learning model. We further examine its performance\nacross various LLMs to identify where CoTox is most effective. Additionally, we\nfind that representing chemical structures with IUPAC names, which are easier\nfor LLMs to understand than SMILES, enhances the model's reasoning ability and\nimproves predictive performance. To demonstrate its practical utility in drug\ndevelopment, we simulate the treatment of relevant cell types with drug and\nincorporated the resulting biological context into the CoTox framework. This\napproach allow CoTox to generate toxicity predictions aligned with\nphysiological responses, as shown in case study. This result highlights the\npotential of LLM-based frameworks to improve interpretability and support\nearly-stage drug safety assessment. The code and prompt used in this work are\navailable at https://github.com/dmis-lab/CoTox.",
+  "url": "https://huggingface.co/papers/2508.03159",
+  "pdf_url": "https://arxiv.org/pdf/2508.03159.pdf"
+}

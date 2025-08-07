@@ -1,0 +1,64 @@
+{
+  "id": "2508.02215",
+  "title": "LeanK: Learnable K Cache Channel Pruning for Efficient Decoding",
+  "authors": [
+    {
+      "_id": "6894106d741a16f544fbcea6",
+      "user": {
+        "_id": "6541159afcbd1aa00682ec66",
+        "avatarUrl": "/avatars/94fd9ce0ea534e5d84736c1a1eb949e7.svg",
+        "isPro": false,
+        "fullname": "zhangyik21",
+        "user": "zhangyik21",
+        "type": "user"
+      },
+      "name": "Yike Zhang",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:39:04.154Z",
+      "hidden": false
+    },
+    {
+      "_id": "6894106d741a16f544fbcea7",
+      "user": {
+        "_id": "6455f5cababbbbd3486d6ee3",
+        "avatarUrl": "/avatars/b6c8f65fd2bef8a00aa3269856ea238e.svg",
+        "isPro": false,
+        "fullname": "Zhiyuan He",
+        "user": "hzy46",
+        "type": "user"
+      },
+      "name": "Zhiyuan He",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:57.434Z",
+      "hidden": false
+    },
+    {
+      "_id": "6894106d741a16f544fbcea8",
+      "name": "Huiqiang Jiang",
+      "hidden": false
+    },
+    {
+      "_id": "6894106d741a16f544fbcea9",
+      "name": "Chengruidong Zhang",
+      "hidden": false
+    },
+    {
+      "_id": "6894106d741a16f544fbceaa",
+      "name": "Yuqing Yang",
+      "hidden": false
+    },
+    {
+      "_id": "6894106d741a16f544fbceab",
+      "name": "Jianyong Wang",
+      "hidden": false
+    },
+    {
+      "_id": "6894106d741a16f544fbceac",
+      "name": "Lili Qiu",
+      "hidden": false
+    }
+  ],
+  "abstract": "Large language models (LLMs) enable long-context tasks but face efficiency\nchallenges due to the growing key-value (KV) cache. We propose LeanK, a\nlearning-based method that prunes unimportant key (K) cache channels by\nleveraging static channel sparsity. With a novel two-stage training process,\nLeanK learns channel-wise static mask that could satisfy specific sparsity\nratio and hardware alignment requirement. LeanK reduces GPU memory and\naccelerates decoding without sacrificing accuracy. Experiments demonstrate up\nto 70% K cache and 16%-18% V cache memory reduction. Custom decoding kernel\nenables 1.3x speedup for attention computation. We also provide insights into\nmodel channels and attention heads during long-context inference by analyzing\nthe learned importance distribution. Our code is available at\nhttps://aka.ms/LeanK.",
+  "url": "https://huggingface.co/papers/2508.02215",
+  "pdf_url": "https://arxiv.org/pdf/2508.02215.pdf"
+}

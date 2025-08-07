@@ -1,0 +1,69 @@
+{
+  "id": "2508.04700",
+  "title": "SEAgent: Self-Evolving Computer Use Agent with Autonomous Learning from\n  Experience",
+  "authors": [
+    {
+      "_id": "68941f54741a16f544fbcf0f",
+      "user": {
+        "_id": "63fda3fced9eead590ff6918",
+        "avatarUrl": "https://cdn-avatars.huggingface.co/v1/production/uploads/1677566802735-noauth.jpeg",
+        "isPro": false,
+        "fullname": "Zeyi Sun",
+        "user": "Zery",
+        "type": "user"
+      },
+      "name": "Zeyi Sun",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:28.544Z",
+      "hidden": false
+    },
+    {
+      "_id": "68941f54741a16f544fbcf10",
+      "name": "Ziyu Liu",
+      "hidden": false
+    },
+    {
+      "_id": "68941f54741a16f544fbcf11",
+      "user": {
+        "_id": "63859cf3b2906edaf83af9f0",
+        "avatarUrl": "https://cdn-avatars.huggingface.co/v1/production/uploads/63859cf3b2906edaf83af9f0/mCgynEtoXdILvzyoPexii.png",
+        "isPro": false,
+        "fullname": "Yuhang Zang",
+        "user": "yuhangzang",
+        "type": "user"
+      },
+      "name": "Yuhang Zang",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:25.677Z",
+      "hidden": false
+    },
+    {
+      "_id": "68941f54741a16f544fbcf12",
+      "name": "Yuhang Cao",
+      "hidden": false
+    },
+    {
+      "_id": "68941f54741a16f544fbcf13",
+      "name": "Xiaoyi Dong",
+      "hidden": false
+    },
+    {
+      "_id": "68941f54741a16f544fbcf14",
+      "name": "Tong Wu",
+      "hidden": false
+    },
+    {
+      "_id": "68941f54741a16f544fbcf15",
+      "name": "Dahua Lin",
+      "hidden": false
+    },
+    {
+      "_id": "68941f54741a16f544fbcf16",
+      "name": "Jiaqi Wang",
+      "hidden": false
+    }
+  ],
+  "abstract": "Repurposing large vision-language models (LVLMs) as computer use agents\n(CUAs) has led to substantial breakthroughs, primarily driven by human-labeled\ndata. However, these models often struggle with novel and specialized software,\nparticularly in scenarios lacking human annotations. To address this challenge,\nwe propose SEAgent, an agentic self-evolving framework enabling CUAs to\nautonomously evolve through interactions with unfamiliar software.\nSpecifically, SEAgent empowers computer-use agents to autonomously master novel\nsoftware environments via experiential learning, where agents explore new\nsoftware, learn through iterative trial-and-error, and progressively tackle\nauto-generated tasks organized from simple to complex. To achieve this goal, we\ndesign a World State Model for step-wise trajectory assessment, along with a\nCurriculum Generator that generates increasingly diverse and challenging tasks.\nThe agent's policy is updated through experiential learning, comprised of\nadversarial imitation of failure actions and Group Relative Policy Optimization\n(GRPO) on successful ones. Furthermore, we introduce a specialist-to-generalist\ntraining strategy that integrates individual experiential insights from\nspecialist agents, facilitating the development of a stronger generalist CUA\ncapable of continuous autonomous evolution. This unified agent ultimately\nachieves performance surpassing ensembles of individual specialist agents on\ntheir specialized software. We validate the effectiveness of SEAgent across\nfive novel software environments within OS-World. Our approach achieves a\nsignificant improvement of 23.2% in success rate, from 11.3% to 34.5%, over a\ncompetitive open-source CUA, i.e., UI-TARS.",
+  "url": "https://huggingface.co/papers/2508.04700",
+  "pdf_url": "https://arxiv.org/pdf/2508.04700.pdf"
+}

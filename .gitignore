@@ -1,3 +1,4 @@
+.claude/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -6,7 +7,7 @@ __pycache__/
 # C extensions
 *.so
 
-# Distribution / packaging
+# Distribution / .claude/packaging
 .Python
 build/
 develop-eggs/

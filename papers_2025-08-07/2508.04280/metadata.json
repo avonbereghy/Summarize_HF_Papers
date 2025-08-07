@@ -1,0 +1,54 @@
+{
+  "id": "2508.04280",
+  "title": "Enhancing Vision-Language Model Training with Reinforcement Learning in\n  Synthetic Worlds for Real-World Success",
+  "authors": [
+    {
+      "_id": "68947269741a16f544fbd068",
+      "user": {
+        "_id": "6348202122bc15d2636ccf87",
+        "avatarUrl": "https://cdn-avatars.huggingface.co/v1/production/uploads/1673510811337-6348202122bc15d2636ccf87.jpeg",
+        "isPro": true,
+        "fullname": "Natyren",
+        "user": "GeorgeBredis",
+        "type": "user"
+      },
+      "name": "George Bredis",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:37:32.805Z",
+      "hidden": false
+    },
+    {
+      "_id": "68947269741a16f544fbd069",
+      "name": "Stanislav Dereka",
+      "hidden": false
+    },
+    {
+      "_id": "68947269741a16f544fbd06a",
+      "name": "Viacheslav Sinii",
+      "hidden": false
+    },
+    {
+      "_id": "68947269741a16f544fbd06b",
+      "name": "Ruslan Rakhimov",
+      "hidden": false
+    },
+    {
+      "_id": "68947269741a16f544fbd06c",
+      "user": {
+        "_id": "62a9c8edc19f92ae443ab37f",
+        "avatarUrl": "https://cdn-avatars.huggingface.co/v1/production/uploads/1669110208492-62a9c8edc19f92ae443ab37f.png",
+        "isPro": false,
+        "fullname": "Daniil Gavrilov",
+        "user": "kefirski",
+        "type": "user"
+      },
+      "name": "Daniil Gavrilov",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:37:30.344Z",
+      "hidden": false
+    }
+  ],
+  "abstract": "Interactive multimodal agents must convert raw visual observations into\ncoherent sequences of language-conditioned actions -- a capability that current\nvision-language models (VLMs) still lack. Earlier reinforcement-learning (RL)\nefforts could, in principle, endow VLMs with such skills, but they have seldom\ntested whether the learned behaviours generalize beyond their training\nsimulators, and they depend either on brittle hyperparameter tuning or on\ndense-reward environments with low state variability. We introduce\nVision-Language Decoupled Actor-Critic (VL-DAC), a lightweight,\nhyperparameter-free RL algorithm. VL-DAC applies PPO updates to action tokens\nwhile learning value only at the environment-step level: an arrangement, to our\nknowledge, not previously explored for large VLMs or LLMs. This simple\ndecoupling removes unstable weighting terms and yields faster, more reliable\nconvergence. Training a single VLM with VL-DAC in one inexpensive simulator at\na time (MiniWorld, Gym-Cards, ALFWorld, or WebShop) already produces policies\nthat generalize widely: +50\\% relative on BALROG (game-centric agentic\ncontrol), +5\\% relative on the hardest part of VSI-Bench (spatial planning),\nand +2\\% on VisualWebBench (web navigation), all without degrading general\nimage understanding accuracy. These results provide the first evidence that a\nsimple RL algorithm can train VLMs entirely in cheap synthetic worlds while\ndelivering measurable gains on real-image agentic, spatial-reasoning, and\nweb-navigation benchmarks.",
+  "url": "https://huggingface.co/papers/2508.04280",
+  "pdf_url": "https://arxiv.org/pdf/2508.04280.pdf"
+}

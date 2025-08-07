@@ -1,0 +1,29 @@
+{
+  "id": "2508.03789",
+  "title": "HPSv3: Towards Wide-Spectrum Human Preference Score",
+  "authors": [
+    {
+      "_id": "6894142c741a16f544fbcec2",
+      "name": "Yuhang Ma",
+      "hidden": false
+    },
+    {
+      "_id": "6894142c741a16f544fbcec3",
+      "name": "Xiaoshi Wu",
+      "hidden": false
+    },
+    {
+      "_id": "6894142c741a16f544fbcec4",
+      "name": "Keqiang Sun",
+      "hidden": false
+    },
+    {
+      "_id": "6894142c741a16f544fbcec5",
+      "name": "Hongsheng Li",
+      "hidden": false
+    }
+  ],
+  "abstract": "Evaluating text-to-image generation models requires alignment with human\nperception, yet existing human-centric metrics are constrained by limited data\ncoverage, suboptimal feature extraction, and inefficient loss functions. To\naddress these challenges, we introduce Human Preference Score v3 (HPSv3). (1)\nWe release HPDv3, the first wide-spectrum human preference dataset integrating\n1.08M text-image pairs and 1.17M annotated pairwise comparisons from\nstate-of-the-art generative models and low to high-quality real-world images.\n(2) We introduce a VLM-based preference model trained using an\nuncertainty-aware ranking loss for fine-grained ranking. Besides, we propose\nChain-of-Human-Preference (CoHP), an iterative image refinement method that\nenhances quality without extra data, using HPSv3 to select the best image at\neach step. Extensive experiments demonstrate that HPSv3 serves as a robust\nmetric for wide-spectrum image evaluation, and CoHP offers an efficient and\nhuman-aligned approach to improve image generation quality. The code and\ndataset are available at the HPSv3 Homepage.",
+  "url": "https://huggingface.co/papers/2508.03789",
+  "pdf_url": "https://arxiv.org/pdf/2508.03789.pdf"
+}

@@ -1,0 +1,89 @@
+{
+  "id": "2508.01191",
+  "title": "Is Chain-of-Thought Reasoning of LLMs a Mirage? A Data Distribution Lens",
+  "authors": [
+    {
+      "_id": "689414b0741a16f544fbcec8",
+      "user": {
+        "_id": "65b2fae679954e21ac426aec",
+        "avatarUrl": "https://cdn-avatars.huggingface.co/v1/production/uploads/65b2fae679954e21ac426aec/LybSb_awygRTQinm1npUq.jpeg",
+        "isPro": false,
+        "fullname": "Chengshuai Zhao",
+        "user": "chengshuaizhao",
+        "type": "user"
+      },
+      "name": "Chengshuai Zhao",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:44.551Z",
+      "hidden": false
+    },
+    {
+      "_id": "689414b0741a16f544fbcec9",
+      "name": "Zhen Tan",
+      "hidden": false
+    },
+    {
+      "_id": "689414b0741a16f544fbceca",
+      "user": {
+        "_id": "68942d7d73b80b8311a584fa",
+        "avatarUrl": "/avatars/80114f28c5166ba79e4418a738960268.svg",
+        "isPro": false,
+        "fullname": "PingchuanMa",
+        "user": "ympc08",
+        "type": "user"
+      },
+      "name": "Pingchuan Ma",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:47.428Z",
+      "hidden": false
+    },
+    {
+      "_id": "689414b0741a16f544fbcecb",
+      "user": {
+        "_id": "6474e1afb68461d5cf7c41cc",
+        "avatarUrl": "https://cdn-avatars.huggingface.co/v1/production/uploads/6474e1afb68461d5cf7c41cc/bcoiD_qPrjHUBlB259djg.png",
+        "isPro": false,
+        "fullname": "Dawei Li",
+        "user": "wjldw",
+        "type": "user"
+      },
+      "name": "Dawei Li",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:54.238Z",
+      "hidden": false
+    },
+    {
+      "_id": "689414b0741a16f544fbcecc",
+      "user": {
+        "_id": "61f087a0a57920a251ec1a6f",
+        "avatarUrl": "/avatars/4402b7986152bb37e02f1305c6bcce2e.svg",
+        "isPro": false,
+        "fullname": "Bohan Jiang",
+        "user": "Bohan",
+        "type": "user"
+      },
+      "name": "Bohan Jiang",
+      "status": "claimed_verified",
+      "statusLastChangedAt": "2025-08-07T10:38:50.992Z",
+      "hidden": false
+    },
+    {
+      "_id": "689414b0741a16f544fbcecd",
+      "name": "Yancheng Wang",
+      "hidden": false
+    },
+    {
+      "_id": "689414b0741a16f544fbcece",
+      "name": "Yingzhen Yang",
+      "hidden": false
+    },
+    {
+      "_id": "689414b0741a16f544fbcecf",
+      "name": "Huan Liu",
+      "hidden": false
+    }
+  ],
+  "abstract": "Chain-of-Thought (CoT) prompting has been shown to improve Large Language\nModel (LLM) performance on various tasks. With this approach, LLMs appear to\nproduce human-like reasoning steps before providing answers (a.k.a., CoT\nreasoning), which often leads to the perception that they engage in deliberate\ninferential processes. However, some initial findings suggest that CoT\nreasoning may be more superficial than it appears, motivating us to explore\nfurther. In this paper, we study CoT reasoning via a data distribution lens and\ninvestigate if CoT reasoning reflects a structured inductive bias learned from\nin-distribution data, allowing the model to conditionally generate reasoning\npaths that approximate those seen during training. Thus, its effectiveness is\nfundamentally bounded by the degree of distribution discrepancy between the\ntraining data and the test queries. With this lens, we dissect CoT reasoning\nvia three dimensions: task, length, and format. To investigate each dimension,\nwe design DataAlchemy, an isolated and controlled environment to train LLMs\nfrom scratch and systematically probe them under various distribution\nconditions. Our results reveal that CoT reasoning is a brittle mirage that\nvanishes when it is pushed beyond training distributions. This work offers a\ndeeper understanding of why and when CoT reasoning fails, emphasizing the\nongoing challenge of achieving genuine and generalizable reasoning.",
+  "url": "https://huggingface.co/papers/2508.01191",
+  "pdf_url": "https://arxiv.org/pdf/2508.01191.pdf"
+}
