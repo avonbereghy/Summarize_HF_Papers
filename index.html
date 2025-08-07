@@ -507,7 +507,7 @@
                         <li class="paper-item" onclick="togglePaperDetail('${paper.id}')">
                             <div class="paper-id">Paper #${paper.id}</div>
                             <h4>${metadata.title || 'Untitled Paper'}</h4>
-                            <div class="paper-authors">${metadata.authors ? metadata.authors.join(', ') : 'Authors not available'}</div>
+                            <div class="paper-authors">${metadata.authors ? metadata.authors.map(author => author.name || author).join(', ') : 'Authors not available'}</div>
                             <div class="paper-summary">${execSummary}</div>
                         </li>
                         <div class="paper-detail" id="detail-${paper.id}">
