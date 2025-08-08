@@ -365,31 +365,27 @@
             renderCalendar();
         }
 
-        // Load papers data from the repository structure
+        // Load papers data by scanning for summary.md files
         async function loadPapersData() {
-            try {
-                const response = await fetch('data.json');
-                const data = await response.json();
-                Object.assign(papersData, data.papers);
-            } catch (error) {
-                console.error('Error loading papers data:', error);
-                // Fallback to hardcoded data if JSON fails to load
-                papersData['2025-08-07'] = [
-                    { id: '2507.23785', path: 'papers_2025-08-07/2507.23785' },
-                    { id: '2508.01191', path: 'papers_2025-08-07/2508.01191' },
-                    { id: '2508.01858', path: 'papers_2025-08-07/2508.01858' },
-                    { id: '2508.02694', path: 'papers_2025-08-07/2508.02694' },
-                    { id: '2508.03159', path: 'papers_2025-08-07/2508.03159' },
-                    { id: '2508.03501', path: 'papers_2025-08-07/2508.03501' },
-                    { id: '2508.03560', path: 'papers_2025-08-07/2508.03560' },
-                    { id: '2508.03680', path: 'papers_2025-08-07/2508.03680' },
-                    { id: '2508.03789', path: 'papers_2025-08-07/2508.03789' },
-                    { id: '2508.03905', path: 'papers_2025-08-07/2508.03905' },
-                    { id: '2508.04026', path: 'papers_2025-08-07/2508.04026' },
-                    { id: '2508.04280', path: 'papers_2025-08-07/2508.04280' },
-                    { id: '2508.04700', path: 'papers_2025-08-07/2508.04700' }
-                ];
-            }
+            // We'll populate this dynamically by checking for existing summary files
+            console.log('Papers data will be loaded dynamically when dates are clicked');
+        }
+
+        // Count papers for a given date by checking if summary files exist
+        function countPapersForDate(dateStr) {
+            // This is a simple check - in a real implementation, you'd want to 
+            // either have a manifest file or scan the directory structure
+            // For now, we'll assume dates have papers if there are any directories
+            
+            // Hardcoded dates that we know have papers (you can expand this list)
+            const knownDates = [
+                '2025-08-07', '2025-07-01', '2025-07-02', '2025-07-03', '2025-07-04',
+                '2025-07-05', '2025-07-06', '2025-07-07', '2025-07-08', '2025-07-09',
+                '2025-07-10', '2025-07-11', '2025-07-12', '2025-07-13', '2025-07-14',
+                '2025-07-15', '2025-07-16'
+            ];
+            
+            return knownDates.includes(dateStr) ? 6 : 0; // Assume 6 papers per day
         }
 
         function renderCalendar() {
@@ -435,7 +431,8 @@
                 
                 // Check if this date has papers
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                if (papersData[dateStr]) {
+                const paperCount = countPapersForDate(dateStr);
+                if (paperCount > 0) {
                     dayElement.classList.add('has-papers');
                     dayElement.onclick = () => selectDate(dateStr);
                 }
@@ -475,8 +472,43 @@
             const container = document.getElementById('summaryContainer');
             container.innerHTML = '<div class="loading">Loading papers</div>';
             
-            const papers = papersData[dateStr];
-            if (!papers || papers.length === 0) {
+            // Discover papers by trying to load summary files directly
+            await displayPapers(dateStr);
+        }
+
+        async function displayPapers(dateStr) {
+            const container = document.getElementById('summaryContainer');
+            
+            // Common paper IDs to try (we'll expand this dynamically)
+            const potentialPapers = [
+                '2508.04026', '2508.01191', '2508.02694', '2508.04700', '2508.03501', '2508.04280',
+                '2508.01858', '2508.03159', '2508.03680', '2508.03905', '2507.23785',
+                '2506.23044', '2506.24119', '2506.24123', '2506.23858', '2506.23151', '2506.22832',
+                '2507.01006', '2507.00432', '2507.01001', '2506.19852', '2506.23115', '2506.20639',
+                '2507.01949', '2507.01945', '2507.01634', '2507.01925', '2507.01957', '2507.01953',
+                '2507.02592', '2506.23918', '2507.02813', '2507.02092', '2507.01352', '2507.02321'
+            ];
+            
+            const foundPapers = [];
+            
+            // Try to load summary files for this date
+            for (const paperId of potentialPapers) {
+                try {
+                    const summaryPath = `papers_${dateStr}/${paperId}/summary.md`;
+                    const response = await fetch(summaryPath);
+                    if (response.ok) {
+                        const summaryText = await response.text();
+                        if (summaryText && summaryText.trim() !== '') {
+                            foundPapers.push({ id: paperId, summaryText, path: `papers_${dateStr}/${paperId}` });
+                        }
+                    }
+                } catch (error) {
+                    // Paper doesn't exist for this date, continue
+                    continue;
+                }
+            }
+            
+            if (foundPapers.length === 0) {
                 container.innerHTML = '<div class="summary-placeholder"><h3>No papers available</h3><p>No papers found for this date.</p></div>';
                 return;
             }
@@ -486,41 +518,51 @@
                 <div class="summary-content">
                     <div class="summary-header">
                         <h3>Papers for ${dateStr}</h3>
-                        <p>${papers.length} papers available</p>
+                        <p>${foundPapers.length} papers available</p>
                     </div>
                     <ul class="paper-list">
             `;
             
-            for (const paper of papers) {
+            for (const paper of foundPapers) {
                 try {
-                    const response = await fetch(`${paper.path}/metadata.json`);
-                    const metadata = await response.json();
+                    // Extract title from markdown
+                    const titleMatch = paper.summaryText.match(/^# (.+)$/m);
+                    const title = titleMatch ? titleMatch[1] : `Paper ${paper.id}`;
                     
-                    const summaryResponse = await fetch(`${paper.path}/summary.md`);
-                    const summaryText = await summaryResponse.text();
+                    // Extract Paper ID from markdown
+                    const paperIdMatch = paper.summaryText.match(/\*\*Paper ID:\*\* (.+)$/m);
+                    const displayId = paperIdMatch ? paperIdMatch[1] : paper.id;
                     
-                    // Extract executive summary from the markdown
-                    const execSummaryMatch = summaryText.match(/## Executive Summary\s+([\s\S]*?)(?=\n##|$)/);
+                    // Extract authors from the bottom
+                    const authorsMatch = paper.summaryText.match(/\*\*Authors:\*\* (.+)$/m);
+                    const authors = authorsMatch ? authorsMatch[1] : 'Authors not available';
+                    
+                    // Extract executive summary
+                    const execSummaryMatch = paper.summaryText.match(/## Executive Summary\s+([\s\S]*?)(?=\n##|$)/);
                     const execSummary = execSummaryMatch ? execSummaryMatch[1].trim() : 'Summary not available';
+                    
+                    // Extract URL
+                    const urlMatch = paper.summaryText.match(/\*\*URL:\*\* (.+)$/m);
+                    const paperUrl = urlMatch ? urlMatch[1] : `https://arxiv.org/abs/${displayId}`;
                     
                     html += `
                         <li class="paper-item" onclick="togglePaperDetail('${paper.id}')">
-                            <div class="paper-id">Paper #${paper.id}</div>
-                            <h4>${metadata.title || 'Untitled Paper'}</h4>
-                            <div class="paper-authors">${metadata.authors ? metadata.authors.map(author => author.name || author).join(', ') : 'Authors not available'}</div>
+                            <div class="paper-id">Paper #${displayId} | <a href="${paperUrl}" target="_blank">View on ArXiv</a></div>
+                            <h4>${title}</h4>
+                            <div class="paper-authors">${authors}</div>
                             <div class="paper-summary">${execSummary}</div>
                         </li>
                         <div class="paper-detail" id="detail-${paper.id}">
-                            <div style="white-space: pre-wrap; font-family: inherit;">${summaryText}</div>
+                            <div style="white-space: pre-wrap; font-family: inherit;">${paper.summaryText}</div>
                         </div>
                     `;
                 } catch (error) {
-                    console.error(`Error loading paper ${paper.id}:`, error);
+                    console.error(`Error processing paper ${paper.id}:`, error);
                     html += `
                         <li class="paper-item">
                             <div class="paper-id">Paper #${paper.id}</div>
-                            <h4>Error loading paper</h4>
-                            <div class="paper-summary">Unable to load paper summary</div>
+                            <h4>Error processing paper</h4>
+                            <div class="paper-summary">Unable to process paper summary</div>
                         </li>
                     `;
                 }
