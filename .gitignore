@@ -129,9 +129,33 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Downloaded papers
-papers/
+# === DATA FILES TO IGNORE (Large files that shouldn't be in git) ===
+# Ignore all PDF files - these are large and available via ArXiv links
 *.pdf
+
+# Ignore metadata JSON files - we only need the summaries for the website
+**/metadata.json
+
+# Ignore progress tracking files
+**/.progress.json
+
+# Ignore master summary files (they're generated and can be recreated)
+**/all_summaries.md
+
+# Downloaded papers folder (already there but keeping for clarity)
+papers/
+
+# === KEEP THESE FILES (Website needs them) ===
+# Keep individual summary.md files (small, needed for website)
+!**/summary.md
+
+# Keep website files
+!index.html
+!style.css
+!script.js
+!*.html
+!*.css
+!*.js
 
 # API keys and secrets
 .env.local
