@@ -14,11 +14,17 @@ Usage:
     
     # Fetch papers for a specific date
     python scrape_hf_papers.py --date 2024-08-07
+    
+    # Fetch papers for today
+    python scrape_hf_papers.py --today
+    
+    # Fetch papers for a date range
+    python scrape_hf_papers.py --start-date 2024-08-01 --end-date 2024-08-07
 """
 
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from pathlib import Path
 from bs4 import BeautifulSoup
@@ -99,84 +105,87 @@ def fetch_papers_list(date_str=None):
         })
         response.raise_for_status()
         
-        # Parse the HTML to extract paper information
-        from bs4 import BeautifulSoup
+        # Parse the HTML
         soup = BeautifulSoup(response.text, 'html.parser')
         
+        # Look for paper links
         papers = []
-        # Look for paper links in the page
-        for link in soup.find_all('a', href=True):
-            href = link['href']
-            if '/papers/' in href and href.count('/') == 2:
-                paper_id = href.split('/papers/')[-1]
-                # Remove any anchor tags (like #community)
-                if '#' in paper_id:
-                    paper_id = paper_id.split('#')[0]
-                if paper_id and '.' in paper_id:  # Valid arxiv ID format
-                    papers.append(paper_id)
+        paper_elements = soup.find_all('article')
         
-        # Remove duplicates while preserving order
-        seen = set()
-        unique_papers = []
-        for paper_id in papers:
-            if paper_id not in seen:
-                seen.add(paper_id)
-                unique_papers.append(paper_id)
+        for element in paper_elements:
+            # Extract paper ID from link
+            link_elem = element.find('a', href=True)
+            if link_elem and '/papers/' in link_elem['href']:
+                paper_id = link_elem['href'].split('/papers/')[-1]
+                
+                # Extract title
+                title_elem = element.find('h3')
+                title = title_elem.text.strip() if title_elem else paper_id
+                
+                # Extract abstract (if available)
+                abstract_elem = element.find('p')
+                abstract = abstract_elem.text.strip() if abstract_elem else ""
+                
+                papers.append({
+                    'id': paper_id,
+                    'title': title,
+                    'abstract': abstract,
+                    'url': f"https://huggingface.co/papers/{paper_id}",
+                    'pdf_url': f"https://arxiv.org/pdf/{paper_id}.pdf"
+                })
         
-        if unique_papers:
-            return fetch_paper_details(unique_papers)
+        # If we found papers, fetch detailed info
+        if papers:
+            print(f"Found {len(papers)} papers on the page")
+            return fetch_paper_details([p['id'] for p in papers])
         else:
-            print(f"No papers found for date {date_str}, trying API fallback...")
-            return fetch_papers_api_fallback()
+            print("No papers found on the page, trying API...")
+            return fetch_papers_api()
+            
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching papers list: {e}")
-        return fetch_papers_api_fallback()
+        print(f"Error fetching papers page: {e}")
+        return fetch_papers_api()
 
 def fetch_paper_details(paper_ids):
-    """Fetch details for a list of paper IDs"""
+    """Fetch detailed information about papers"""
     papers = []
-    for paper_id in paper_ids:
-        paper_url = f"https://huggingface.co/papers/{paper_id}"
-        api_url = f"https://huggingface.co/api/papers/{paper_id}"
-        
+    
+    for paper_id in paper_ids[:6]:  # Limit to first 6 papers
         try:
+            # Fetch from Hugging Face API
+            api_url = f"https://huggingface.co/api/papers/{paper_id}"
             response = requests.get(api_url, headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             })
+            
             if response.status_code == 200:
-                data = response.json()
+                paper_data = response.json()
                 papers.append({
                     'id': paper_id,
-                    'title': data.get('title', 'Unknown Title'),
-                    'authors': data.get('authors', []),
-                    'abstract': data.get('summary', ''),
-                    'url': paper_url,
+                    'title': paper_data.get('title', ''),
+                    'abstract': paper_data.get('summary', ''),
+                    'authors': paper_data.get('authors', []),
+                    'url': f"https://huggingface.co/papers/{paper_id}",
                     'pdf_url': f"https://arxiv.org/pdf/{paper_id}.pdf"
                 })
             else:
-                # If API fails, construct basic info
+                # Fallback to basic info
                 papers.append({
                     'id': paper_id,
-                    'title': f"Paper {paper_id}",
+                    'title': paper_id,
+                    'abstract': 'Not available',
                     'authors': [],
-                    'abstract': '',
-                    'url': paper_url,
+                    'url': f"https://huggingface.co/papers/{paper_id}",
                     'pdf_url': f"https://arxiv.org/pdf/{paper_id}.pdf"
                 })
+                
         except Exception as e:
-            print(f"Error fetching details for {paper_id}: {e}")
-            papers.append({
-                'id': paper_id,
-                'title': f"Paper {paper_id}",
-                'authors': [],
-                'abstract': '',
-                'url': paper_url,
-                'pdf_url': f"https://arxiv.org/pdf/{paper_id}.pdf"
-            })
+            print(f"Error fetching details for paper {paper_id}: {e}")
+            continue
     
     return papers
 
-def fetch_papers_api_fallback():
+def fetch_papers_api():
     """Fallback to try the API endpoint"""
     api_url = "https://huggingface.co/api/daily-papers"
     
@@ -305,25 +314,13 @@ def save_progress(output_dir, completed_papers, last_index):
     with open(progress_file, 'w') as f:
         json.dump(progress, f, indent=2)
 
-def main():
-    """Main function to orchestrate scraping and summarization"""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Scrape HuggingFace papers and generate AI summaries')
-    parser.add_argument('--model', choices=['together', 'gemini', 'auto'], default='auto',
-                        help='AI model to use: together (Meta Llama 3.3 70B), gemini (Gemini 1.5 Flash), or auto (detect based on available API keys)')
-    parser.add_argument('--date', type=str, default=None,
-                        help='Date to fetch papers for (YYYY-MM-DD format). Defaults to today.')
-    args = parser.parse_args()
-    
-    # Create folder with specified date or today's date
-    target_date = args.date if args.date else datetime.now().strftime("%Y-%m-%d")
-    output_dir = Path(f"papers_{target_date}")
-    output_dir.mkdir(exist_ok=True)
+def process_single_date(target_date, model_preference):
+    """Process papers for a single date"""
+    # Create folder within papers_archive directory
+    output_dir = Path(f"papers_archive/papers_{target_date}")
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"📁 Created output directory: {output_dir}")
-    
-    # Determine model preference
-    model_preference = None if args.model == 'auto' else args.model
     
     # Load previous progress if exists
     progress = load_progress(output_dir)
@@ -463,13 +460,69 @@ def main():
             f.write(item['summary'])
             f.write("\n\n---\n\n")
     
-    print(f"\n✨ Processing complete!")
+    print(f"\n✨ Processing complete for {target_date}!")
     print(f"📂 All papers saved in: {output_dir}/")
     print(f"📄 Master summary available at: {master_summary_path}")
     print(f"\n📈 Summary:")
     print(f"  - Total papers processed: {len(summaries)}")
     print(f"  - PDFs downloaded: {sum(1 for s in summaries if s['pdf_downloaded'])}")
     print(f"  - Summaries generated: {len(summaries)}")
+
+def main():
+    """Main function to orchestrate scraping and summarization"""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Scrape HuggingFace papers and generate AI summaries')
+    parser.add_argument('--model', choices=['together', 'gemini', 'auto'], default='auto',
+                        help='AI model to use: together (Meta Llama 3.3 70B), gemini (Gemini 1.5 Flash), or auto (detect based on available API keys)')
+    parser.add_argument('--date', type=str, default=None,
+                        help='Date to fetch papers for (YYYY-MM-DD format). Defaults to today.')
+    parser.add_argument('--start-date', type=str, default=None,
+                        help='Start date for range processing (YYYY-MM-DD format)')
+    parser.add_argument('--end-date', type=str, default=None,
+                        help='End date for range processing (YYYY-MM-DD format)')
+    parser.add_argument('--today', action='store_true',
+                        help='Process today\'s papers')
+    args = parser.parse_args()
+    
+    # Determine which dates to process
+    dates_to_process = []
+    
+    if args.today:
+        dates_to_process = [datetime.now().strftime("%Y-%m-%d")]
+    elif args.start_date and args.end_date:
+        # Process date range
+        current_date = datetime.strptime(args.start_date, "%Y-%m-%d")
+        end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
+        while current_date <= end_date:
+            dates_to_process.append(current_date.strftime("%Y-%m-%d"))
+            current_date += timedelta(days=1)
+    elif args.date:
+        # Process single specified date
+        dates_to_process = [args.date]
+    else:
+        # Default to today
+        dates_to_process = [datetime.now().strftime("%Y-%m-%d")]
+    
+    # Determine model preference
+    model_preference = None if args.model == 'auto' else args.model
+    
+    # Process each date
+    for idx, target_date in enumerate(dates_to_process, 1):
+        if len(dates_to_process) > 1:
+            print(f"\n{'='*60}")
+            print(f"Processing date {idx}/{len(dates_to_process)}: {target_date}")
+            print(f"{'='*60}\n")
+        
+        process_single_date(target_date, model_preference)
+        
+        # Pause between dates when processing multiple dates
+        if len(dates_to_process) > 1 and idx < len(dates_to_process):
+            print(f"\n⏸️ Pausing for 1 minute before next date...")
+            time.sleep(60)
+    
+    if len(dates_to_process) > 1:
+        print(f"\n🎉 All dates processed successfully!")
+        print(f"📁 All summaries saved in: papers_archive/")
 
 if __name__ == "__main__":
     main()

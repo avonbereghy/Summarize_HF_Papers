@@ -12,32 +12,42 @@ from datetime import datetime
 def scan_papers_directory():
     """Scan the repository for all paper directories and their summaries."""
     papers_data = {}
-    base_path = Path('.')
     
-    # Find all papers_YYYY-MM-DD directories
-    for papers_dir in base_path.glob('papers_*'):
-        if papers_dir.is_dir():
-            # Extract date from directory name (papers_YYYY-MM-DD)
-            date_str = papers_dir.name.replace('papers_', '')
+    # Check both old structure (for backward compatibility) and new structure
+    base_paths = [Path('.'), Path('papers_archive')]
+    
+    for base_path in base_paths:
+        if not base_path.exists():
+            continue
             
-            # Find all paper subdirectories
-            paper_entries = []
-            for paper_dir in sorted(papers_dir.iterdir()):
-                if paper_dir.is_dir():
-                    paper_id = paper_dir.name
-                    
-                    # Check if summary.md and metadata.json exist
-                    summary_path = paper_dir / 'summary.md'
-                    metadata_path = paper_dir / 'metadata.json'
-                    
-                    if summary_path.exists() and metadata_path.exists():
-                        paper_entries.append({
-                            'id': paper_id,
-                            'path': str(paper_dir).replace('\\', '/')  # Ensure forward slashes
-                        })
-            
-            if paper_entries:
-                papers_data[date_str] = paper_entries
+        # Find all papers_YYYY-MM-DD directories
+        for papers_dir in base_path.glob('papers_*'):
+            if papers_dir.is_dir():
+                # Extract date from directory name (papers_YYYY-MM-DD)
+                date_str = papers_dir.name.replace('papers_', '')
+                
+                # Skip if we already have this date (from higher priority path)
+                if date_str in papers_data:
+                    continue
+                
+                # Find all paper subdirectories
+                paper_entries = []
+                for paper_dir in sorted(papers_dir.iterdir()):
+                    if paper_dir.is_dir():
+                        paper_id = paper_dir.name
+                        
+                        # Check if summary.md and metadata.json exist
+                        summary_path = paper_dir / 'summary.md'
+                        metadata_path = paper_dir / 'metadata.json'
+                        
+                        if summary_path.exists() and metadata_path.exists():
+                            paper_entries.append({
+                                'id': paper_id,
+                                'path': str(paper_dir).replace('\\', '/')  # Ensure forward slashes
+                            })
+                
+                if paper_entries:
+                    papers_data[date_str] = paper_entries
     
     return papers_data
 
