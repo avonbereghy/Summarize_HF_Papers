@@ -49,6 +49,44 @@
             margin: 0 auto;
         }
 
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .control-input {
+            flex: 1 1 360px;
+            max-width: 560px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.95em;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.1s ease-in-out, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(118,75,162,0.25);
+        }
+
+        .control-btn.secondary {
+            background: #fff;
+            color: #764ba2;
+            border: 1px solid #d7c8e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
         .calendar-container {
             display: flex;
             gap: 40px;
@@ -239,6 +277,21 @@
             text-decoration: underline;
         }
 
+        .paper-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .chip {
+            font-size: 0.75em;
+            background: #eef;
+            color: #4a4a8a;
+            border: 1px solid #dde;
+            border-radius: 999px;
+            padding: 2px 8px;
+        }
+
         .paper-authors {
             font-size: 0.9em;
             color: #888;
@@ -297,6 +350,11 @@
             text-decoration: underline;
         }
 
+        .match-count {
+            color: #666;
+            font-size: 0.9em;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -334,6 +392,12 @@
         <div class="intro">
             <h1>HuggingFace Papers Daily</h1>
             <p>Welcome! I'm passionate about machine learning and AI research. Here you'll find daily summaries of the latest papers from HuggingFace. Click on any highlighted date in the calendar to explore the papers published that day.</p>
+            <div class="controls" role="region" aria-label="Controls">
+                <input id="searchInput" class="control-input" type="search" placeholder="Search title, authors, ID, or summary…" aria-label="Search papers" oninput="onSearchInput()" />
+                <button class="control-btn" onclick="goToLatest()" aria-label="Jump to latest with papers">Latest</button>
+                <button class="control-btn secondary" onclick="goToToday()" aria-label="Jump to today">Today</button>
+                <button class="control-btn secondary" onclick="clearSearch()" aria-label="Clear search">Clear</button>
+            </div>
         </div>
 
         <div class="calendar-container">
@@ -375,10 +439,20 @@
         let papersData = {};
         let currentDate = new Date();
         let selectedDate = null;
+        let loadedSummaries = {}; // cache: dateStr -> [{id, displayId, summaryText, path, title, authors, url}]
+        let currentFilter = '';
 
         // Initialize calendar
         async function init() {
             await loadPapersData();
+            const urlDate = getDateFromURL();
+            const savedDate = localStorage.getItem('lastSelectedDate');
+            const initialDate = urlDate || savedDate || getLatestDateWithPapers();
+            if (initialDate) {
+                const [y, m] = initialDate.split('-');
+                currentDate = new Date(Number(y), Number(m) - 1, 1);
+                await selectDate(initialDate, { pushHistory: false });
+            }
             renderCalendar();
         }
 
@@ -398,6 +472,28 @@
                 console.error('Error loading data.json:', error);
                 papersData = {};
             }
+        }
+
+        function getDateFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const date = params.get('date');
+            if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+            return null;
+        }
+
+        function setDateInURL(dateStr, replace = false) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('date', dateStr);
+            if (replace) {
+                window.history.replaceState({}, '', url.toString());
+            } else {
+                window.history.pushState({}, '', url.toString());
+            }
+        }
+
+        function getLatestDateWithPapers() {
+            const dates = Object.keys(papersData).sort();
+            return dates.length ? dates[dates.length - 1] : null;
         }
 
         // Get papers for a given date
@@ -477,7 +573,7 @@
             renderCalendar();
         }
 
-        async function selectDate(dateStr) {
+        async function selectDate(dateStr, options = {}) {
             selectedDate = dateStr;
             renderCalendar();
             
@@ -486,6 +582,8 @@
             
             // Display papers for the selected date
             await displayPapers(dateStr);
+            localStorage.setItem('lastSelectedDate', dateStr);
+            setDateInURL(dateStr, options?.pushHistory === false);
         }
 
         async function displayPapers(dateStr) {
@@ -497,94 +595,170 @@
                 return;
             }
             
-            const foundPapers = [];
-            
-            // Load summary files for each paper
-            for (const paper of papers) {
-                try {
-                    const summaryPath = `${paper.path}/summary.md`;
-                    const response = await fetch(summaryPath);
-                    if (response.ok) {
-                        const summaryText = await response.text();
-                        if (summaryText && summaryText.trim() !== '') {
-                            foundPapers.push({ 
-                                id: paper.id, 
-                                summaryText, 
-                                path: paper.path 
-                            });
+            if (!loadedSummaries[dateStr]) {
+                const foundPapers = [];
+                for (const paper of papers) {
+                    try {
+                        const summaryPath = `${paper.path}/summary.md`;
+                        const response = await fetch(summaryPath);
+                        if (response.ok) {
+                            const summaryText = await response.text();
+                            if (summaryText && summaryText.trim() !== '') {
+                                const titleMatch = summaryText.match(/^# (.+)$/m);
+                                const title = titleMatch ? titleMatch[1] : `Paper ${paper.id}`;
+                                const idMatch = summaryText.match(/\*\*Paper ID:\*\* (.+)$/m);
+                                const displayId = idMatch ? idMatch[1] : paper.id;
+                                const authorsMatch = summaryText.match(/\*\*Authors:\*\* (.+)$/m);
+                                const authors = authorsMatch ? authorsMatch[1] : '';
+                                const urlMatch = summaryText.match(/\*\*URL:\*\* (.+)$/m);
+                                const paperUrl = urlMatch ? urlMatch[1] : `https://arxiv.org/abs/${displayId}`;
+
+                                foundPapers.push({ 
+                                    id: paper.id,
+                                    displayId,
+                                    summaryText,
+                                    path: paper.path,
+                                    title,
+                                    authors,
+                                    url: paperUrl
+                                });
+                            }
                         }
+                    } catch (error) {
+                        console.error(`Error loading paper ${paper.id}:`, error);
                     }
-                } catch (error) {
-                    console.error(`Error loading paper ${paper.id}:`, error);
                 }
+                loadedSummaries[dateStr] = foundPapers;
             }
             
-            if (foundPapers.length === 0) {
+            if ((loadedSummaries[dateStr] || []).length === 0) {
                 container.innerHTML = '<div class="summary-placeholder"><h3>Error loading papers</h3><p>Could not load paper summaries for this date.</p></div>';
                 return;
             }
             
-            // Create summary content
+            renderPapersForDate(dateStr);
+        }
+
+        function renderPapersForDate(dateStr) {
+            const container = document.getElementById('summaryContainer');
+            const papers = loadedSummaries[dateStr] || [];
+            const filter = (currentFilter || '').toLowerCase();
+
+            const filtered = !filter
+                ? papers
+                : papers.filter(p => {
+                    const execSummaryMatch = p.summaryText.match(/## Executive Summary\s+([\s\S]*?)(?=\n##|$)/);
+                    const execSummary = execSummaryMatch ? execSummaryMatch[1].trim() : '';
+                    return (
+                        p.title.toLowerCase().includes(filter) ||
+                        (p.authors || '').toLowerCase().includes(filter) ||
+                        p.displayId.toLowerCase().includes(filter) ||
+                        execSummary.toLowerCase().includes(filter)
+                    );
+                });
+
+            const matchInfo = filter ? `<span class="match-count">Showing ${filtered.length} of ${papers.length} papers</span>` : `<span class="match-count">${papers.length} papers available</span>`;
+
             let html = `
                 <div class="summary-content">
                     <div class="summary-header">
                         <h3>Papers for ${dateStr}</h3>
-                        <p>${foundPapers.length} papers available</p>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap: wrap;">
+                            ${matchInfo}
+                            <button class="control-btn secondary" onclick="expandAll()" aria-label="Expand all">Expand all</button>
+                            <button class="control-btn secondary" onclick="collapseAll()" aria-label="Collapse all">Collapse all</button>
+                        </div>
                     </div>
                     <ul class="paper-list">
             `;
-            
-            for (const paper of foundPapers) {
-                try {
-                    // Extract title from markdown
-                    const titleMatch = paper.summaryText.match(/^# (.+)$/m);
-                    const title = titleMatch ? titleMatch[1] : `Paper ${paper.id}`;
-                    
-                    // Extract Paper ID from markdown
-                    const paperIdMatch = paper.summaryText.match(/\*\*Paper ID:\*\* (.+)$/m);
-                    const displayId = paperIdMatch ? paperIdMatch[1] : paper.id;
-                    
-                    // Extract authors from the bottom
-                    const authorsMatch = paper.summaryText.match(/\*\*Authors:\*\* (.+)$/m);
-                    const authors = authorsMatch ? authorsMatch[1] : 'Authors not available';
-                    
-                    // Extract executive summary
-                    const execSummaryMatch = paper.summaryText.match(/## Executive Summary\s+([\s\S]*?)(?=\n##|$)/);
-                    const execSummary = execSummaryMatch ? execSummaryMatch[1].trim() : 'Summary not available';
-                    
-                    // Extract URL
-                    const urlMatch = paper.summaryText.match(/\*\*URL:\*\* (.+)$/m);
-                    const paperUrl = urlMatch ? urlMatch[1] : `https://arxiv.org/abs/${displayId}`;
-                    
-                    html += `
-                        <li class="paper-item" onclick="togglePaperDetail('${paper.id}')">
-                            <div class="paper-id">Paper #${displayId} | <a href="${paperUrl}" target="_blank" onclick="event.stopPropagation();">View on ArXiv</a></div>
-                            <h4>${title}</h4>
-                            <div class="paper-authors">${authors}</div>
-                            <div class="paper-summary">${execSummary}</div>
-                        </li>
-                        <div class="paper-detail" id="detail-${paper.id}">
-                            <div style="white-space: pre-wrap; font-family: inherit;">${paper.summaryText}</div>
+
+            for (const paper of filtered) {
+                const execSummaryMatch = paper.summaryText.match(/## Executive Summary\s+([\s\S]*?)(?=\n##|$)/);
+                const execSummary = execSummaryMatch ? execSummaryMatch[1].trim() : 'Summary not available';
+
+                const pdfUrl = paper.url.includes('arxiv.org')
+                    ? paper.url.replace('/abs/', '/pdf/') + '.pdf'
+                    : paper.url;
+
+                const hTitle = highlight(paper.title, filter);
+                const hAuthors = highlight(paper.authors || 'Authors not available', filter);
+                const hSummary = highlight(execSummary, filter);
+
+                html += `
+                    <li class="paper-item" onclick="togglePaperDetail('${paper.id}')">
+                        <div class="paper-id">
+                            Paper #${paper.displayId}
+                            <span class="chip">${paper.displayId.startsWith('arXiv') ? 'arXiv' : 'ID'}</span>
+                            | <a href="${paper.url}" target="_blank" onclick="event.stopPropagation();">View</a>
+                            | <a href="${pdfUrl}" target="_blank" onclick="event.stopPropagation();">PDF</a>
                         </div>
-                    `;
-                } catch (error) {
-                    console.error(`Error processing paper ${paper.id}:`, error);
-                    html += `
-                        <li class="paper-item">
-                            <div class="paper-id">Paper #${paper.id}</div>
-                            <h4>Error processing paper</h4>
-                            <div class="paper-summary">Unable to process paper summary</div>
-                        </li>
-                    `;
-                }
+                        <h4>${hTitle}</h4>
+                        <div class="paper-authors">${hAuthors}</div>
+                        <div class="paper-summary">${hSummary}</div>
+                    </li>
+                    <div class="paper-detail" id="detail-${paper.id}">
+                        <div style="white-space: pre-wrap; font-family: inherit;">${paper.summaryText}</div>
+                    </div>
+                `;
             }
-            
+
             html += `
                     </ul>
                 </div>
             `;
-            
+
             container.innerHTML = html;
+        }
+
+        function highlight(text, filter) {
+            if (!filter) return escapeHtml(text);
+            const safe = escapeHtml(text);
+            try {
+                const re = new RegExp(`(${filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig');
+                return safe.replace(re, '<mark>$1</mark>');
+            } catch {
+                return safe;
+            }
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;');
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.paper-detail').forEach(d => d.classList.add('active'));
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.paper-detail').forEach(d => d.classList.remove('active'));
+        }
+
+        function onSearchInput() {
+            currentFilter = (document.getElementById('searchInput').value || '').trim();
+            if (selectedDate) renderPapersForDate(selectedDate);
+        }
+
+        function clearSearch() {
+            const el = document.getElementById('searchInput');
+            el.value = '';
+            currentFilter = '';
+            if (selectedDate) renderPapersForDate(selectedDate);
+        }
+
+        function goToLatest() {
+            const latest = getLatestDateWithPapers();
+            if (latest) selectDate(latest);
+        }
+
+        function goToToday() {
+            const d = new Date();
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            currentDate = new Date(d.getFullYear(), d.getMonth(), 1);
+            renderCalendar();
+            if (getPapersForDate(dateStr).length) selectDate(dateStr);
         }
 
         function togglePaperDetail(paperId) {
