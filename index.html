@@ -397,6 +397,7 @@
                 <button class="control-btn" onclick="goToLatest()" aria-label="Jump to latest with papers">Latest</button>
                 <button class="control-btn secondary" onclick="goToToday()" aria-label="Jump to today">Today</button>
                 <button class="control-btn secondary" onclick="clearSearch()" aria-label="Clear search">Clear</button>
+                <button id="summarizeBtn" class="control-btn" style="display:none" onclick="summarizeToday()" aria-label="Summarize today">Summarize Today</button>
             </div>
         </div>
 
@@ -441,6 +442,7 @@
         let selectedDate = null;
         let loadedSummaries = {}; // cache: dateStr -> [{id, displayId, summaryText, path, title, authors, url}]
         let currentFilter = '';
+        const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:5000' : null;
 
         // Initialize calendar
         async function init() {
@@ -454,12 +456,19 @@
                 await selectDate(initialDate, { pushHistory: false });
             }
             renderCalendar();
+            updateSummarizeButtonVisibility();
+            // Optional: ping local API to confirm availability
+            if (API_BASE) {
+                try { await fetch(`${API_BASE}/api/health`, { cache: 'no-store' }); }
+                catch { /* ignore */ }
+                updateSummarizeButtonVisibility();
+            }
         }
 
         // Load papers data from data.json
         async function loadPapersData() {
             try {
-                const response = await fetch('data.json');
+                const response = await fetch(`data.json?t=${Date.now()}`, { cache: 'no-store' });
                 if (response.ok) {
                     const data = await response.json();
                     papersData = data.papers || {};
@@ -494,6 +503,11 @@
         function getLatestDateWithPapers() {
             const dates = Object.keys(papersData).sort();
             return dates.length ? dates[dates.length - 1] : null;
+        }
+
+        function getTodayStr() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
         // Get papers for a given date
@@ -584,6 +598,7 @@
             await displayPapers(dateStr);
             localStorage.setItem('lastSelectedDate', dateStr);
             setDateInURL(dateStr, options?.pushHistory === false);
+            updateSummarizeButtonVisibility();
         }
 
         async function displayPapers(dateStr) {
@@ -637,6 +652,44 @@
             }
             
             renderPapersForDate(dateStr);
+        }
+
+        function hasPapersForDate(dateStr) {
+            return (papersData[dateStr] || []).length > 0;
+        }
+
+        function updateSummarizeButtonVisibility() {
+            const btn = document.getElementById('summarizeBtn');
+            const today = getTodayStr();
+            const shouldShow = !!API_BASE && !hasPapersForDate(today);
+            btn.style.display = shouldShow ? 'inline-block' : 'none';
+            btn.disabled = !shouldShow;
+        }
+
+        async function summarizeToday() {
+            const btn = document.getElementById('summarizeBtn');
+            if (!API_BASE) return;
+            const originalText = btn.textContent;
+            btn.textContent = 'Summarizing…';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/api/summarize_today`, { method: 'POST' });
+                if (!res.ok) throw new Error('Request failed');
+                const out = await res.json();
+                // Reload data and jump to today when successful
+                await loadPapersData();
+                renderCalendar();
+                const today = getTodayStr();
+                if (hasPapersForDate(today)) {
+                    await selectDate(today);
+                }
+            } catch (e) {
+                alert('Failed to summarize today. Ensure the local server is running.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                updateSummarizeButtonVisibility();
+            }
         }
 
         function renderPapersForDate(dateStr) {
